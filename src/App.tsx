@@ -13,6 +13,7 @@ import { Header } from './components/Header';
 import { AgendaTab } from './components/DashboardTabs/AgendaTab';
 import { ClientesTab } from './components/DashboardTabs/ClientesTab';
 import { ServicosTab } from './components/DashboardTabs/ServicosTab';
+import { ProfissionaisTab } from './components/DashboardTabs/ProfissionaisTab';
 import { CaixaTab } from './components/DashboardTabs/CaixaTab';
 import { EstoqueTab } from './components/DashboardTabs/EstoqueTab';
 import { AlertasTab } from './components/DashboardTabs/AlertasTab';
@@ -49,6 +50,8 @@ const DashboardContent: React.FC = () => {
         return <ClientesTab />;
       case 'servicos':
         return <ServicosTab />;
+      case 'profissionais':
+        return <ProfissionaisTab />;
       case 'caixa':
         return <CaixaTab />;
       case 'estoque':

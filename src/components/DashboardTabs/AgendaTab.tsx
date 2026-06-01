@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Appointment, Client, Service } from '../../types';
 import { DeleteConfirmationModal } from '../DeleteConfirmationModal';
+import { CreateConfirmationModal } from '../CreateConfirmationModal';
 import { 
   Calendar, Clock, UserCheck, Check, X, ShieldAlert, Sparkles, 
   Send, UserPlus, Phone, CreditCard, Filter, ChevronRight, User 
@@ -19,7 +20,8 @@ export const AgendaTab: React.FC<AgendaTabProps> = ({ onRedirectToAlerts }) => {
     addAppointment, 
     updateAppointmentStatus, 
     deleteAppointment,
-    addClient 
+    addClient,
+    professionals
   } = useApp();
 
   // Filter state
@@ -31,8 +33,15 @@ export const AgendaTab: React.FC<AgendaTabProps> = ({ onRedirectToAlerts }) => {
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [date, setDate] = useState<string>('');
   const [time, setTime] = useState<string>('');
-  const [professional, setProfessional] = useState<string>('Fran Oliveira');
+  const [professional, setProfessional] = useState<string>('');
+
+  React.useEffect(() => {
+    if (!professional && professionals && professionals.length > 0) {
+      setProfessional(professionals[0].name);
+    }
+  }, [professionals, professional]);
   const [customPrice, setCustomPrice] = useState<string>('');
+  const [isConfirmCreateOpen, setIsConfirmCreateOpen] = useState<boolean>(false);
   
   // Quick Client register inside form
   const [isQuickClientActive, setIsQuickClientActive] = useState<boolean>(false);
@@ -42,32 +51,53 @@ export const AgendaTab: React.FC<AgendaTabProps> = ({ onRedirectToAlerts }) => {
   const [quickNotes, setQuickNotes] = useState<string>('');
 
   // Handle Form submit
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate Client
+    if (!isQuickClientActive) {
+      const matchClient = clients.find(c => c.id === selectedClientId);
+      if (!matchClient) {
+        alert("Selecione um cliente válido.");
+        return;
+      }
+    } else {
+      if (!quickName || !quickPhone) {
+        alert("Por favor, preencha o Nome e Telefone do novo cliente.");
+        return;
+      }
+    }
+
+    // Validate Services
+    const matchServices = services.filter(s => selectedServiceIds.includes(s.id));
+    if (matchServices.length === 0) {
+      alert("Por favor, selecione pelo menos um procedimento.");
+      return;
+    }
+
+    if (!date || !time) {
+      alert("Por favor, selecione a data e o horário.");
+      return;
+    }
+
+    setIsConfirmCreateOpen(true);
+  };
+
+  const executeSaveAppointment = async () => {
     let clientIdToUse = selectedClientId;
     let clientNameToUse = '';
     let clientPhoneToUse = '';
 
     // 1. If Quick Client is active, create client first
     if (isQuickClientActive) {
-      if (!quickName || !quickPhone) {
-        alert("Por favor, preencha o Nome e Telefone do novo cliente.");
-        return;
-      }
-
-      // Generate id matching standard
-      const tempId = 'client_' + Math.random().toString(36).substr(2, 9);
-      await addClient({
+      const createdId = await addClient({
         name: quickName,
         phone: quickPhone,
         email: quickEmail || 'nao@informado.com',
         notes: quickNotes || 'Cliente cadastrado rapidamente pela agenda.'
       });
       
-      // Wait momentarily or use created references
-      // To bypass state delay, let's look for our created client in state or use temporary fields
-      clientIdToUse = tempId;
+      clientIdToUse = createdId;
       clientNameToUse = quickName;
       clientPhoneToUse = quickPhone;
 
@@ -79,21 +109,14 @@ export const AgendaTab: React.FC<AgendaTabProps> = ({ onRedirectToAlerts }) => {
       setQuickNotes('');
     } else {
       const matchClient = clients.find(c => c.id === selectedClientId);
-      if (!matchClient) {
-        alert("Selecione um cliente válido.");
-        return;
+      if (matchClient) {
+        clientNameToUse = matchClient.name;
+        clientPhoneToUse = matchClient.phone;
       }
-      clientNameToUse = matchClient.name;
-      clientPhoneToUse = matchClient.phone;
     }
 
     // Find services
     const matchServices = services.filter(s => selectedServiceIds.includes(s.id));
-    if (matchServices.length === 0) {
-      alert("Por favor, selecione pelo menos um procedimento.");
-      return;
-    }
-
     const combinedName = matchServices.map(s => s.name).join(' + ');
     const combinedId = matchServices.map(s => s.id).join('_');
     const defaultTotal = matchServices.reduce((sum, s) => sum + s.price, 0);
@@ -112,7 +135,7 @@ export const AgendaTab: React.FC<AgendaTabProps> = ({ onRedirectToAlerts }) => {
       time,
       status: 'pendente',
       price: finalPrice,
-      professional
+      professional: professional || (professionals && professionals[0] ? professionals[0].name : 'Fran Oliveira')
     });
 
     // Reset Form
@@ -447,13 +470,20 @@ export const AgendaTab: React.FC<AgendaTabProps> = ({ onRedirectToAlerts }) => {
                 <label className="text-xs font-sans font-semibold text-brand-clay uppercase tracking-wider block">Atendente</label>
                 <select
                   required
-                  value={professional}
+                  value={professional || (professionals[0]?.name || '')}
                   onChange={(e) => setProfessional(e.target.value)}
                   className="w-full bg-brand-offwhite border border-brand-beige-dark/50 rounded-xl px-3 py-2 text-sm font-sans text-brand-clay"
                 >
-                  <option value="Fran Oliveira">Fran Oliveira</option>
-                  <option value="Mayara Sousa">Mayara Sousa</option>
-                  <option value="Camila Borges">Camila Borges</option>
+                  {professionals.map(p => (
+                    <option key={p.id} value={p.name}>{p.name}</option>
+                  ))}
+                  {professionals.length === 0 && (
+                    <>
+                      <option value="Fran Oliveira">Fran Oliveira</option>
+                      <option value="Mayara Sousa">Mayara Sousa</option>
+                      <option value="Camila Borges">Camila Borges</option>
+                    </>
+                  )}
                   <option value="Outro Salão">Outro Salão</option>
                 </select>
               </div>
@@ -494,6 +524,20 @@ export const AgendaTab: React.FC<AgendaTabProps> = ({ onRedirectToAlerts }) => {
         message={`Deseja realmente excluir permanentemente o agendamento de ${
           appointments.find(a => a.id === deleteConfirmId)?.clientName || 'este cliente'
         }?`}
+      />
+
+      <CreateConfirmationModal
+        isOpen={isConfirmCreateOpen}
+        onClose={() => setIsConfirmCreateOpen(false)}
+        onConfirm={executeSaveAppointment}
+        title="Confirmar Agendamento"
+        message={`Deseja realmente registrar este agendamento para ${
+          isQuickClientActive 
+            ? quickName 
+            : (clients.find(c => c.id === selectedClientId)?.name || 'o cliente selecionado')
+        } no dia ${date ? date.split('-').reverse().join('/') : ''} às ${time}?`}
+        confirmText="Confirmar Agendamento"
+        type="success"
       />
 
     </div>

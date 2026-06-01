@@ -7,6 +7,15 @@ export interface Client {
   createdAt: string;
 }
 
+export interface Professional {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  email: string;
+  color?: string;
+}
+
 export interface Service {
   id: string;
   name: string;
@@ -283,5 +292,24 @@ export const INITIAL_NOTIFICATION_SETTINGS: NotificationSetting[] = [
     channel: "E-mail",
     template: "Olá, {cliente}. Confirmamos seu agendamento no Fran Hair para o dia {data} às {hora} ({servico}) com {profissional}. Se precisar reagendar, entre em contato.",
     isActive: true
+  }
+];
+
+export const INITIAL_PROFESSIONALS: Professional[] = [
+  {
+    id: "prof_1",
+    name: "Fran Oliveira",
+    role: "Cabeleireira & Visagista",
+    phone: "(11) 99999-1111",
+    email: "fran@fran-hair.com",
+    color: "#4d6b53"
+  },
+  {
+    id: "prof_2",
+    name: "Mayara Sousa",
+    role: "Manicure & Pedicure",
+    phone: "(11) 99999-2222",
+    email: "mayara@fran-hair.com",
+    color: "#c2a990"
   }
 ];

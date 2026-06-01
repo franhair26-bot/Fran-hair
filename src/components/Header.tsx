@@ -23,6 +23,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setSidebarOpen }) => 
       case 'agenda': return 'Agenda & Reservas';
       case 'clientes': return 'Histórico de Clientes';
       case 'servicos': return 'Catálogo de Serviços';
+      case 'profissionais': return 'Gestão de Profissionais';
       case 'caixa': return 'Fluxo de Caixa';
       case 'estoque': return 'Estoque e Suprimentos';
       case 'alertas': return 'Central de Alertas & Modelos';

@@ -2,7 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Calendar, Users, Scissors, DollarSign, Package, Bell, 
-  LogOut, ShieldAlert, CheckCircle, Feather, Menu, X 
+  LogOut, ShieldAlert, CheckCircle, Feather, Menu, X, Contact
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -25,6 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'agenda', name: 'Reservas & Agenda', icon: Calendar },
     { id: 'clientes', name: 'Histórico de Clientes', icon: Users },
     { id: 'servicos', name: 'Serviços & Preços', icon: Scissors },
+    { id: 'profissionais', name: 'Equipe & Profissionais', icon: Contact },
     { id: 'caixa', name: 'Fluxo de Caixa', icon: DollarSign },
     { id: 'estoque', name: 'Estoque Cosmético', icon: Package },
     { id: 'alertas', name: 'Alertas Antecipados', icon: Bell },

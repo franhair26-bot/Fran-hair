@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { DeleteConfirmationModal } from '../DeleteConfirmationModal';
+import { CreateConfirmationModal } from '../CreateConfirmationModal';
 import { Scissors, Clock, DollarSign, Plus, Trash2, Tag, CalendarRange } from 'lucide-react';
 
 export const ServicosTab: React.FC = () => {
@@ -15,8 +16,9 @@ export const ServicosTab: React.FC = () => {
   const [category, setCategory] = useState('Cabelo');
   const [durationMin, setDurationMin] = useState<number | ''>('');
   const [price, setPrice] = useState<number | ''>('');
+  const [isConfirmCreateOpen, setIsConfirmCreateOpen] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name || isNaN(Number(durationMin)) || isNaN(Number(price))) {
@@ -24,6 +26,10 @@ export const ServicosTab: React.FC = () => {
       return;
     }
 
+    setIsConfirmCreateOpen(true);
+  };
+
+  const executeSaveService = async () => {
     await addService({
       name,
       category,
@@ -196,6 +202,16 @@ export const ServicosTab: React.FC = () => {
         message={`Deseja realmente excluir permanentemente o procedimento "${
           services.find(s => s.id === deleteConfirmId)?.name || 'este procedimento'
         }" do catálogo?`}
+      />
+
+      <CreateConfirmationModal
+        isOpen={isConfirmCreateOpen}
+        onClose={() => setIsConfirmCreateOpen(false)}
+        onConfirm={executeSaveService}
+        title="Confirmar Cadastro de Serviço"
+        message={`Deseja realmente adicionar o procedimento "${name}" na categoria "${category}" por R$ ${Number(price).toFixed(2)}?`}
+        confirmText="Adicionar Serviço"
+        type="success"
       />
 
     </div>

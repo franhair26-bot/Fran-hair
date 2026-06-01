@@ -85,6 +85,19 @@
         "isActive": { "type": "boolean" }
       },
       "required": ["timeBeforeHours", "channel", "template", "isActive"]
+    },
+    "professional": {
+      "title": "Professional",
+      "description": "Equipe de profissionais Fran Hair",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "color": { "type": "string" }
+      },
+      "required": ["name", "role", "phone", "email"]
     }
   },
   "firestore": {
@@ -111,6 +124,10 @@
     "/notificationSettings/{settingId}": {
       "schema": "notificationSetting",
       "description": "Configurações de Alertas"
+    },
+    "/professionals/{professionalId}": {
+      "schema": "professional",
+      "description": "Lista de Profissionais do Salão"
     }
   }
 }

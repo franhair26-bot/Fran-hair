@@ -30,8 +30,9 @@ service cloud.firestore {
 
     // 2. Validation Blueprints (The "Anti-Update-Gap")
     function isValidClient(data) {
-      return data.keys().hasAll(['name', 'phone', 'email', 'notes', 'createdAt', 'userId'])
-        && data.keys().size() == 6
+      return (data.keys().size() == 6 || data.keys().size() == 7)
+        && data.keys().hasAll(['name', 'phone', 'email', 'notes', 'createdAt', 'userId'])
+        && (!data.keys().hasAll(['id']) || data.id is string)
         && data.name is string && data.name.size() > 0 && data.name.size() <= 100
         && data.phone is string && data.phone.size() <= 25
         && data.email is string && data.email.size() <= 100
@@ -41,8 +42,9 @@ service cloud.firestore {
     }
 
     function isValidService(data) {
-      return data.keys().hasAll(['name', 'durationMin', 'price', 'category', 'userId'])
-        && data.keys().size() == 5
+      return (data.keys().size() == 5 || data.keys().size() == 6)
+        && data.keys().hasAll(['name', 'durationMin', 'price', 'category', 'userId'])
+        && (!data.keys().hasAll(['id']) || data.id is string)
         && data.name is string && data.name.size() > 0 && data.name.size() <= 100
         && data.durationMin is int && data.durationMin >= 0 && data.durationMin <= 1440
         && (data.price is int || data.price is float) && data.price >= 0.0
@@ -51,8 +53,9 @@ service cloud.firestore {
     }
 
     function isValidAppointment(data) {
-      return data.keys().hasAll(['clientId', 'clientName', 'clientPhone', 'serviceId', 'serviceName', 'date', 'time', 'status', 'price', 'notified', 'professional', 'userId'])
-        && data.keys().size() == 12
+      return (data.keys().size() == 12 || data.keys().size() == 13)
+        && data.keys().hasAll(['clientId', 'clientName', 'clientPhone', 'serviceId', 'serviceName', 'date', 'time', 'status', 'price', 'notified', 'professional', 'userId'])
+        && (!data.keys().hasAll(['id']) || data.id is string)
         && data.clientId is string && data.clientId.size() <= 128
         && data.clientName is string && data.clientName.size() <= 100
         && data.clientPhone is string && data.clientPhone.size() <= 25
@@ -68,8 +71,9 @@ service cloud.firestore {
     }
 
     function isValidProduct(data) {
-      return data.keys().hasAll(['name', 'brand', 'category', 'quantity', 'minQuantity', 'priceCost', 'priceSell', 'lastRestocked', 'userId'])
-        && data.keys().size() == 9
+      return (data.keys().size() == 9 || data.keys().size() == 10)
+        && data.keys().hasAll(['name', 'brand', 'category', 'quantity', 'minQuantity', 'priceCost', 'priceSell', 'lastRestocked', 'userId'])
+        && (!data.keys().hasAll(['id']) || data.id is string)
         && data.name is string && data.name.size() > 0 && data.name.size() <= 100
         && data.brand is string && data.brand.size() <= 100
         && data.category is string && data.category.size() <= 100
@@ -83,7 +87,8 @@ service cloud.firestore {
 
     function isValidTransaction(data) {
       return data.keys().hasAll(['type', 'description', 'amount', 'date', 'category', 'userId'])
-        && (data.keys().size() == 6 || (data.keys().size() == 7 && data.keys().hasAll(['appointmentId'])))
+        && (data.keys().size() >= 6 && data.keys().size() <= 8)
+        && (!data.keys().hasAll(['id']) || data.id is string)
         && data.type is string && (data.type == 'receita' || data.type == 'despesa')
         && data.description is string && data.description.size() <= 200
         && (data.amount is int || data.amount is float) && data.amount >= 0.0
@@ -94,12 +99,25 @@ service cloud.firestore {
     }
 
     function isValidNotificationSetting(data) {
-      return data.keys().hasAll(['timeBeforeHours', 'channel', 'template', 'isActive', 'userId'])
-        && data.keys().size() == 5
+      return (data.keys().size() == 5 || data.keys().size() == 6)
+        && data.keys().hasAll(['timeBeforeHours', 'channel', 'template', 'isActive', 'userId'])
+        && (!data.keys().hasAll(['id']) || data.id is string)
         && data.timeBeforeHours is int && data.timeBeforeHours >= 0
         && data.channel is string && data.channel.size() <= 50
         && data.template is string && data.template.size() <= 1000
         && data.isActive is bool
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidProfessional(data) {
+      return (data.keys().size() == 6 || data.keys().size() == 7)
+        && data.keys().hasAll(['name', 'role', 'phone', 'email', 'color', 'userId'])
+        && (!data.keys().hasAll(['id']) || data.id is string)
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.role is string && data.role.size() <= 100
+        && data.phone is string && data.phone.size() <= 25
+        && data.email is string && data.email.size() <= 100
+        && data.color is string && data.color.size() <= 20
         && data.userId == request.auth.uid;
     }
 
@@ -159,6 +177,16 @@ service cloud.firestore {
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && isValidId(settingId) && isValidNotificationSetting(incoming());
       allow update: if isSignedIn() && isValidId(settingId) && isOwner(existing()) && isValidNotificationSetting(incoming())
+                       && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isOwner(existing());
+    }
+
+    // Professionals Collection Routing
+    match /professionals/{professionalId} {
+      allow get: if isSignedIn() && isOwner(existing());
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(professionalId) && isValidProfessional(incoming());
+      allow update: if isSignedIn() && isValidId(professionalId) && isOwner(existing()) && isValidProfessional(incoming())
                        && incoming().userId == existing().userId;
       allow delete: if isSignedIn() && isOwner(existing());
     }

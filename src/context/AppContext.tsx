@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
-  Client, Service, Appointment, Product, Transaction, NotificationSetting,
+  Client, Service, Appointment, Product, Transaction, NotificationSetting, Professional,
   INITIAL_CLIENTS, INITIAL_SERVICES, INITIAL_APPOINTMENTS, INITIAL_PRODUCTS, 
-  INITIAL_TRANSACTIONS, INITIAL_NOTIFICATION_SETTINGS 
+  INITIAL_TRANSACTIONS, INITIAL_NOTIFICATION_SETTINGS, INITIAL_PROFESSIONALS
 } from '../types';
 import { 
   isFirebaseConfigured, auth, db, googleProvider,
@@ -36,7 +36,7 @@ interface AppContextType {
   syncLocalToCloud: () => Promise<void>;
   
   // Data actions
-  addClient: (client: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
+  addClient: (client: Omit<Client, 'id' | 'createdAt'>) => Promise<string>;
   deleteClient: (id: string) => Promise<void>;
   editClient: (client: Client) => Promise<void>;
   
@@ -56,6 +56,10 @@ interface AppContextType {
   deleteTransaction: (id: string) => Promise<void>;
 
   updateNotificationSetting: (id: string, template: string, isActive: boolean, timeBeforeHours: number) => Promise<void>;
+
+  professionals: Professional[];
+  addProfessional: (professional: Omit<Professional, 'id'>) => Promise<void>;
+  deleteProfessional: (id: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -67,6 +71,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [products, setProducts] = useState<Product[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSetting[]>([]);
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
   
   const [user, setUser] = useState<User | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -86,8 +91,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const localProducts = localStorage.getItem('fran_hair_products');
     const localTransactions = localStorage.getItem('fran_hair_transactions');
     const localSettings = localStorage.getItem('fran_hair_settings');
+    const localProfessionals = localStorage.getItem('fran_hair_professionals');
 
-    if (!localClients && !localServices && !localAppointments && !localProducts && !localTransactions && !localSettings) {
+    if (!localClients && !localServices && !localAppointments && !localProducts && !localTransactions && !localSettings && !localProfessionals) {
       // First boot: load mock seeds
       setClients(INITIAL_CLIENTS);
       setServices(INITIAL_SERVICES);
@@ -95,6 +101,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setProducts(INITIAL_PRODUCTS);
       setTransactions(INITIAL_TRANSACTIONS);
       setNotificationSettings(INITIAL_NOTIFICATION_SETTINGS);
+      setProfessionals(INITIAL_PROFESSIONALS);
 
       localStorage.setItem('fran_hair_clients', JSON.stringify(INITIAL_CLIENTS));
       localStorage.setItem('fran_hair_services', JSON.stringify(INITIAL_SERVICES));
@@ -102,6 +109,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('fran_hair_products', JSON.stringify(INITIAL_PRODUCTS));
       localStorage.setItem('fran_hair_transactions', JSON.stringify(INITIAL_TRANSACTIONS));
       localStorage.setItem('fran_hair_settings', JSON.stringify(INITIAL_NOTIFICATION_SETTINGS));
+      localStorage.setItem('fran_hair_professionals', JSON.stringify(INITIAL_PROFESSIONALS));
     } else {
       // Load cache
       if (localClients) setClients(JSON.parse(localClients));
@@ -110,6 +118,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (localProducts) setProducts(JSON.parse(localProducts));
       if (localTransactions) setTransactions(JSON.parse(localTransactions));
       if (localSettings) setNotificationSettings(JSON.parse(localSettings));
+      
+      if (localProfessionals) {
+        setProfessionals(JSON.parse(localProfessionals));
+      } else {
+        setProfessionals(INITIAL_PROFESSIONALS);
+        localStorage.setItem('fran_hair_professionals', JSON.stringify(INITIAL_PROFESSIONALS));
+      }
     }
     
     setIsLoading(false);
@@ -134,6 +149,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (notificationSettings.length > 0) localStorage.setItem('fran_hair_settings', JSON.stringify(notificationSettings));
   }, [notificationSettings]);
+  useEffect(() => {
+    if (professionals.length > 0) localStorage.setItem('fran_hair_professionals', JSON.stringify(professionals));
+  }, [professionals]);
 
   // Auth Listener setup if Firebase is configured
   useEffect(() => {
@@ -243,6 +261,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         (err) => handleFirestoreError(err, OperationType.LIST, 'notificationSettings')
       );
 
+      const unsubProfessionals = onSnapshot(
+        query(collection(db, 'professionals'), where('userId', '==', uid)),
+        (snapshot) => {
+          const list: Professional[] = [];
+          snapshot.forEach((doc) => {
+            list.push({ ...(doc.data() as Omit<Professional, 'id'>), id: doc.id });
+          });
+          if (list.length > 0) {
+            setProfessionals(list);
+          }
+        },
+        (err) => handleFirestoreError(err, OperationType.LIST, 'professionals')
+      );
+
       setIsLoading(false);
 
       return () => {
@@ -252,6 +284,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         unsubProducts();
         unsubTransactions();
         unsubSettings();
+        unsubProfessionals();
       };
     }
   }, [isLoggedIn, user]);
@@ -390,6 +423,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       }
 
+      for (const prof of professionals) {
+        const id = prof.id.startsWith('prof-') || prof.id.startsWith('prof_') ? 'professional_' + Math.random().toString(36).substr(2, 9) : prof.id;
+        const ref = doc(db, 'professionals', id);
+        batch.set(ref, {
+          name: prof.name,
+          role: prof.role,
+          phone: prof.phone,
+          email: prof.email,
+          color: prof.color || '',
+          userId: uid
+        });
+      }
+
       await batch.commit();
       
       setHasUnsyncedData(false);
@@ -410,7 +456,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Client CRUDS
-  const addClient = async (newClient: Omit<Client, 'id' | 'createdAt'>) => {
+  const addClient = async (newClient: Omit<Client, 'id' | 'createdAt'>): Promise<string> => {
     const id = 'client_' + Math.random().toString(36).substr(2, 9);
     const clientItem: Client = {
       ...newClient,
@@ -431,6 +477,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         handleFirestoreError(err, OperationType.WRITE, 'clients/' + id);
       }
     }
+    return id;
   };
 
   const editClient = async (editedClient: Client) => {
@@ -778,6 +825,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Professional CRUDS
+  const addProfessional = async (newProf: Omit<Professional, 'id'>) => {
+    const id = 'professional_' + Math.random().toString(36).substr(2, 9);
+    const profItem: Professional = {
+      ...newProf,
+      id
+    };
+
+    setProfessionals(prev => [...prev, profItem]);
+    markUnsynced();
+
+    if (isLoggedIn && user && isFirebaseConfigured && db) {
+      try {
+        await setDoc(doc(db, 'professionals', id), {
+          ...profItem,
+          userId: user.uid
+        });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, 'professionals/' + id);
+      }
+    }
+  };
+
+  const deleteProfessional = async (id: string) => {
+    setProfessionals(prev => prev.filter(p => p.id !== id));
+    markUnsynced();
+
+    if (isLoggedIn && user && isFirebaseConfigured && db) {
+      try {
+        if (!id.startsWith('prof_')) {
+          await deleteDoc(doc(db, 'professionals', id));
+        }
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, 'professionals/' + id);
+      }
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       clients,
@@ -817,7 +902,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addTransaction,
       deleteTransaction,
       
-      updateNotificationSetting
+      updateNotificationSetting,
+
+      professionals,
+      addProfessional,
+      deleteProfessional
     }}>
       {children}
     </AppContext.Provider>

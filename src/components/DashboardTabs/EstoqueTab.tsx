@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { DeleteConfirmationModal } from '../DeleteConfirmationModal';
+import { CreateConfirmationModal } from '../CreateConfirmationModal';
 import { Product } from '../../types';
 import { Package, RefreshCw, Plus, Trash2, ArrowUpRight, ShieldAlert, Sparkles, AlertTriangle } from 'lucide-react';
 
@@ -16,8 +17,9 @@ export const EstoqueTab: React.FC = () => {
   const [minQuantity, setMinQuantity] = useState<number | ''>('');
   const [priceCost, setPriceCost] = useState<number | ''>('');
   const [priceSell, setPriceSell] = useState<number | ''>('');
+  const [isConfirmCreateOpen, setIsConfirmCreateOpen] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name || !brand || isNaN(Number(quantity)) || isNaN(Number(minQuantity)) || isNaN(Number(priceCost)) || isNaN(Number(priceSell))) {
@@ -25,6 +27,10 @@ export const EstoqueTab: React.FC = () => {
       return;
     }
 
+    setIsConfirmCreateOpen(true);
+  };
+
+  const executeSaveProduct = async () => {
     await addProduct({
       name,
       brand,
@@ -280,6 +286,16 @@ export const EstoqueTab: React.FC = () => {
         message={`Deseja realmente remover permanentemente o produto "${
           products.find(p => p.id === deleteConfirmId)?.name || 'este produto'
         }" do estoque?`}
+      />
+
+      <CreateConfirmationModal
+        isOpen={isConfirmCreateOpen}
+        onClose={() => setIsConfirmCreateOpen(false)}
+        onConfirm={executeSaveProduct}
+        title="Confirmar Cadastro de Produto"
+        message={`Deseja realmente cadastrar o produto "${name}" marca "${brand}" com ${quantity} unidades em estoque?`}
+        confirmText="Adicionar Produto"
+        type="success"
       />
 
     </div>
