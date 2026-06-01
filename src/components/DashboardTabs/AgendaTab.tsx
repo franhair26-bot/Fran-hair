@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Appointment, Client, Service } from '../../types';
+import { DeleteConfirmationModal } from '../DeleteConfirmationModal';
 import { 
   Calendar, Clock, UserCheck, Check, X, ShieldAlert, Sparkles, 
   Send, UserPlus, Phone, CreditCard, Filter, ChevronRight, User 
@@ -263,33 +264,13 @@ export const AgendaTab: React.FC<AgendaTabProps> = ({ onRedirectToAlerts }) => {
                   </button>
                   
                   {/* Cancel / Trash Delete */}
-                  {deleteConfirmId === app.id ? (
-                    <div className="flex items-center gap-1 bg-red-50 p-1 rounded-lg border border-red-200">
-                      <button
-                        onClick={() => {
-                          deleteAppointment(app.id);
-                          setDeleteConfirmId(null);
-                        }}
-                        className="p-1 px-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-[10px] font-sans font-bold cursor-pointer transition-colors"
-                      >
-                        Sim
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmId(null)}
-                        className="p-1 px-1.5 bg-brand-beige hover:bg-brand-beige-dark/50 text-brand-clay rounded text-[10px] font-sans transition-colors cursor-pointer"
-                      >
-                        Não
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setDeleteConfirmId(app.id)}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded-lg text-xs transition-colors cursor-pointer font-medium"
-                      title="Excluir do cadastro"
-                    >
-                      Deletar
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setDeleteConfirmId(app.id)}
+                    className="p-1 text-red-600 hover:bg-red-50 rounded-lg text-xs transition-colors cursor-pointer font-medium"
+                    title="Excluir do cadastro"
+                  >
+                    Deletar
+                  </button>
 
                 </div>
               </div>
@@ -500,6 +481,20 @@ export const AgendaTab: React.FC<AgendaTabProps> = ({ onRedirectToAlerts }) => {
           </form>
         </div>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            deleteAppointment(deleteConfirmId);
+          }
+        }}
+        title="Confirmar Exclusão"
+        message={`Deseja realmente excluir permanentemente o agendamento de ${
+          appointments.find(a => a.id === deleteConfirmId)?.clientName || 'este cliente'
+        }?`}
+      />
 
     </div>
   );

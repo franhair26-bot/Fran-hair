@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Client } from '../../types';
+import { DeleteConfirmationModal } from '../DeleteConfirmationModal';
 import { Users, Search, UserPlus, FileText, Trash2, Edit2, Phone, Mail, FileCheck } from 'lucide-react';
 
 export const ClientesTab: React.FC = () => {
@@ -159,34 +160,14 @@ export const ClientesTab: React.FC = () => {
                     <Edit2 className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Editar</span>
                   </button>
-                  {deleteConfirmId === client.id ? (
-                    <div className="flex items-center gap-1 bg-red-50 p-1.5 rounded-xl border border-red-200">
-                      <button
-                        onClick={() => {
-                          deleteClient(client.id);
-                          setDeleteConfirmId(null);
-                        }}
-                        className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-sans font-bold cursor-pointer transition-colors"
-                      >
-                        Sim
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmId(null)}
-                        className="px-2.5 py-1 bg-brand-beige hover:bg-brand-beige-dark/50 text-brand-clay rounded-lg text-xs font-sans transition-colors cursor-pointer"
-                      >
-                        Não
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setDeleteConfirmId(client.id)}
-                      className="p-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200/50 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 text-xs font-medium font-sans"
-                      title="Excluir cadastro"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Excluir</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setDeleteConfirmId(client.id)}
+                    className="p-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200/50 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 text-xs font-medium font-sans"
+                    title="Excluir cadastro"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Excluir</span>
+                  </button>
                 </div>
               </div>
             ))
@@ -275,6 +256,20 @@ export const ClientesTab: React.FC = () => {
           </form>
         </div>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            deleteClient(deleteConfirmId);
+          }
+        }}
+        title="Excluir Cliente"
+        message={`Deseja realmente excluir permanentemente o cadastro de ${
+          clients.find(c => c.id === deleteConfirmId)?.name || 'este cliente'
+        }? Todos os agendamentos desse cliente não serão modificados, mas o cadastro dele será removido.`}
+      />
 
     </div>
   );

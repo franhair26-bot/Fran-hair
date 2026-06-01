@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { DeleteConfirmationModal } from '../DeleteConfirmationModal';
 import { Scissors, Clock, DollarSign, Plus, Trash2, Tag, CalendarRange } from 'lucide-react';
 
 export const ServicosTab: React.FC = () => {
@@ -87,33 +88,13 @@ export const ServicosTab: React.FC = () => {
                         </div>
 
                         {/* Trash */}
-                        {deleteConfirmId === serv.id ? (
-                          <div className="flex items-center gap-1 bg-red-50 p-1 rounded-lg border border-red-200 shrink-0">
-                            <button
-                              onClick={() => {
-                                deleteService(serv.id);
-                                setDeleteConfirmId(null);
-                              }}
-                              className="p-1 px-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-[9px] font-sans font-bold cursor-pointer transition-colors"
-                            >
-                              Sim
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirmId(null)}
-                              className="p-1 px-1.5 bg-brand-beige hover:bg-brand-beige-dark/50 text-brand-clay rounded text-[9px] font-sans transition-colors cursor-pointer"
-                            >
-                              Não
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setDeleteConfirmId(serv.id)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded-lg group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
-                            title="Excluir procedimento do catálogo"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => setDeleteConfirmId(serv.id)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded-lg group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
+                          title="Excluir procedimento do catálogo"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     ))
                   )}
@@ -202,6 +183,20 @@ export const ServicosTab: React.FC = () => {
           </form>
         </div>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            deleteService(deleteConfirmId);
+          }
+        }}
+        title="Excluir Serviço"
+        message={`Deseja realmente excluir permanentemente o procedimento "${
+          services.find(s => s.id === deleteConfirmId)?.name || 'este procedimento'
+        }" do catálogo?`}
+      />
 
     </div>
   );

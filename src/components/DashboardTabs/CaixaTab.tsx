@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { DeleteConfirmationModal } from '../DeleteConfirmationModal';
 import { Transaction } from '../../types';
 import { 
   Plus, DollarSign, ArrowUpRight, ArrowDownRight, Trash2, 
@@ -155,33 +156,13 @@ export const CaixaTab: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        {deleteConfirmId === tx.id ? (
-                          <div className="flex items-center justify-end gap-1 bg-red-50 p-1 rounded-lg border border-red-200 inline-flex">
-                            <button
-                              onClick={() => {
-                                deleteTransaction(tx.id);
-                                setDeleteConfirmId(null);
-                              }}
-                              className="p-1 px-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-[9px] font-sans font-bold cursor-pointer transition-colors"
-                            >
-                              Sim
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirmId(null)}
-                              className="p-1 px-1.5 bg-brand-beige hover:bg-brand-beige-dark/50 text-brand-clay rounded text-[9px] font-sans transition-colors cursor-pointer"
-                            >
-                              Não
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setDeleteConfirmId(tx.id)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
-                            title="Excluir movimentação"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => setDeleteConfirmId(tx.id)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                          title="Excluir movimentação"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -332,6 +313,20 @@ export const CaixaTab: React.FC = () => {
         </div>
 
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            deleteTransaction(deleteConfirmId);
+          }
+        }}
+        title="Estornar Lançamento"
+        message={`Deseja realmente apagar permanentemente esta movimentação de caixa ("${
+          transactions.find(tx => tx.id === deleteConfirmId)?.description || 'esta movimentação'
+        }")?`}
+      />
 
     </div>
   );
