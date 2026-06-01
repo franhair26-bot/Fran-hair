@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-brand-offwhite: #fbf8f3;
+  --color-brand-beige: #efe9dd;
+  --color-brand-beige-dark: #dcd3bf;
+  --color-brand-clay: #4a453e;
+  --color-brand-clay-light: #766e65;
+  --color-brand-clay-dark: #2f2a24;
+  --color-brand-moss: #5a5a40;
+  --color-brand-moss-light: #737352;
+  --color-brand-moss-dark: #3f3f2d;
+  --color-brand-moss-hover: #4e4e37;
+  
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-cursive: "Alex Brush", cursive;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+/* Custom typographic styles to keep visual consistency */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-brand-offwhite);
+  color: var(--color-brand-clay);
+}

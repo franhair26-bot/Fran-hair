@@ -1,0 +1,6 @@
+{
+  "name": "Fran Hair",
+  "description": "Sistema de gestão para salão de beleza Fran Hair com design rústico e natural, focado em tons terrosos, com suporte completo Offline-First e sincronização na nuvem.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
