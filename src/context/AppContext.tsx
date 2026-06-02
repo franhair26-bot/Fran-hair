@@ -93,23 +93,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const localSettings = localStorage.getItem('fran_hair_settings');
     const localProfessionals = localStorage.getItem('fran_hair_professionals');
 
-    if (!localClients && !localServices && !localAppointments && !localProducts && !localTransactions && !localSettings && !localProfessionals) {
-      // First boot: load mock seeds
-      setClients(INITIAL_CLIENTS);
-      setServices(INITIAL_SERVICES);
-      setAppointments(INITIAL_APPOINTMENTS);
-      setProducts(INITIAL_PRODUCTS);
-      setTransactions(INITIAL_TRANSACTIONS);
-      setNotificationSettings(INITIAL_NOTIFICATION_SETTINGS);
-      setProfessionals(INITIAL_PROFESSIONALS);
+    const isOffline = localStorage.getItem('fran_hair_offline_mode') === 'true';
 
-      localStorage.setItem('fran_hair_clients', JSON.stringify(INITIAL_CLIENTS));
-      localStorage.setItem('fran_hair_services', JSON.stringify(INITIAL_SERVICES));
-      localStorage.setItem('fran_hair_appointments', JSON.stringify(INITIAL_APPOINTMENTS));
-      localStorage.setItem('fran_hair_products', JSON.stringify(INITIAL_PRODUCTS));
-      localStorage.setItem('fran_hair_transactions', JSON.stringify(INITIAL_TRANSACTIONS));
-      localStorage.setItem('fran_hair_settings', JSON.stringify(INITIAL_NOTIFICATION_SETTINGS));
-      localStorage.setItem('fran_hair_professionals', JSON.stringify(INITIAL_PROFESSIONALS));
+    if (!localClients && !localServices && !localAppointments && !localProducts && !localTransactions && !localSettings && !localProfessionals) {
+      // First boot: load mock seeds only if user is demo offline mode
+      if (isOffline) {
+        setClients(INITIAL_CLIENTS);
+        setServices(INITIAL_SERVICES);
+        setAppointments(INITIAL_APPOINTMENTS);
+        setProducts(INITIAL_PRODUCTS);
+        setTransactions(INITIAL_TRANSACTIONS);
+        setNotificationSettings(INITIAL_NOTIFICATION_SETTINGS);
+        setProfessionals(INITIAL_PROFESSIONALS);
+
+        localStorage.setItem('fran_hair_clients', JSON.stringify(INITIAL_CLIENTS));
+        localStorage.setItem('fran_hair_services', JSON.stringify(INITIAL_SERVICES));
+        localStorage.setItem('fran_hair_appointments', JSON.stringify(INITIAL_APPOINTMENTS));
+        localStorage.setItem('fran_hair_products', JSON.stringify(INITIAL_PRODUCTS));
+        localStorage.setItem('fran_hair_transactions', JSON.stringify(INITIAL_TRANSACTIONS));
+        localStorage.setItem('fran_hair_settings', JSON.stringify(INITIAL_NOTIFICATION_SETTINGS));
+        localStorage.setItem('fran_hair_professionals', JSON.stringify(INITIAL_PROFESSIONALS));
+      } else {
+        // Online login scenario starts clean space
+        setClients([]);
+        setServices([]);
+        setAppointments([]);
+        setProducts([]);
+        setTransactions([]);
+        setNotificationSettings([]);
+        setProfessionals([]);
+      }
     } else {
       // Load cache
       if (localClients) setClients(JSON.parse(localClients));
@@ -122,8 +135,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (localProfessionals) {
         setProfessionals(JSON.parse(localProfessionals));
       } else {
-        setProfessionals(INITIAL_PROFESSIONALS);
-        localStorage.setItem('fran_hair_professionals', JSON.stringify(INITIAL_PROFESSIONALS));
+        setProfessionals(isOffline ? INITIAL_PROFESSIONALS : []);
+        if (isOffline) {
+          localStorage.setItem('fran_hair_professionals', JSON.stringify(INITIAL_PROFESSIONALS));
+        }
       }
     }
     
@@ -132,26 +147,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Sync to localStorage whenever local states change (Offline Cache)
   useEffect(() => {
-    if (clients.length > 0) localStorage.setItem('fran_hair_clients', JSON.stringify(clients));
-  }, [clients]);
+    if (!isLoading) localStorage.setItem('fran_hair_clients', JSON.stringify(clients));
+  }, [clients, isLoading]);
   useEffect(() => {
-    if (services.length > 0) localStorage.setItem('fran_hair_services', JSON.stringify(services));
-  }, [services]);
+    if (!isLoading) localStorage.setItem('fran_hair_services', JSON.stringify(services));
+  }, [services, isLoading]);
   useEffect(() => {
-    if (appointments.length > 0) localStorage.setItem('fran_hair_appointments', JSON.stringify(appointments));
-  }, [appointments]);
+    if (!isLoading) localStorage.setItem('fran_hair_appointments', JSON.stringify(appointments));
+  }, [appointments, isLoading]);
   useEffect(() => {
-    if (products.length > 0) localStorage.setItem('fran_hair_products', JSON.stringify(products));
-  }, [products]);
+    if (!isLoading) localStorage.setItem('fran_hair_products', JSON.stringify(products));
+  }, [products, isLoading]);
   useEffect(() => {
-    if (transactions.length > 0) localStorage.setItem('fran_hair_transactions', JSON.stringify(transactions));
-  }, [transactions]);
+    if (!isLoading) localStorage.setItem('fran_hair_transactions', JSON.stringify(transactions));
+  }, [transactions, isLoading]);
   useEffect(() => {
-    if (notificationSettings.length > 0) localStorage.setItem('fran_hair_settings', JSON.stringify(notificationSettings));
-  }, [notificationSettings]);
+    if (!isLoading) localStorage.setItem('fran_hair_settings', JSON.stringify(notificationSettings));
+  }, [notificationSettings, isLoading]);
   useEffect(() => {
-    if (professionals.length > 0) localStorage.setItem('fran_hair_professionals', JSON.stringify(professionals));
-  }, [professionals]);
+    if (!isLoading) localStorage.setItem('fran_hair_professionals', JSON.stringify(professionals));
+  }, [professionals, isLoading]);
 
   // Auth Listener setup if Firebase is configured
   useEffect(() => {
@@ -176,7 +191,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsLoading(true);
       const uid = user.uid;
 
-      // Subscribe to all 6 collections
+      // Subscribe to all 7 collections
       const unsubClients = onSnapshot(
         query(collection(db, 'clients'), where('userId', '==', uid)),
         (snapshot) => {
@@ -184,9 +199,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           snapshot.forEach((doc) => {
             list.push({ ...(doc.data() as Omit<Client, 'id'>), id: doc.id });
           });
-          if (list.length > 0) {
-            setClients(list);
-          }
+          setClients(list);
         },
         (err) => handleFirestoreError(err, OperationType.LIST, 'clients')
       );
@@ -198,9 +211,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           snapshot.forEach((doc) => {
             list.push({ ...(doc.data() as Omit<Service, 'id'>), id: doc.id });
           });
-          if (list.length > 0) {
-            setServices(list);
-          }
+          setServices(list);
         },
         (err) => handleFirestoreError(err, OperationType.LIST, 'services')
       );
@@ -212,9 +223,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           snapshot.forEach((doc) => {
             list.push({ ...(doc.data() as Omit<Appointment, 'id'>), id: doc.id });
           });
-          if (list.length > 0) {
-            setAppointments(list);
-          }
+          setAppointments(list);
         },
         (err) => handleFirestoreError(err, OperationType.LIST, 'appointments')
       );
@@ -226,9 +235,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           snapshot.forEach((doc) => {
             list.push({ ...(doc.data() as Omit<Product, 'id'>), id: doc.id });
           });
-          if (list.length > 0) {
-            setProducts(list);
-          }
+          setProducts(list);
         },
         (err) => handleFirestoreError(err, OperationType.LIST, 'products')
       );
@@ -240,22 +247,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           snapshot.forEach((doc) => {
             list.push({ ...(doc.data() as Omit<Transaction, 'id'>), id: doc.id });
           });
-          if (list.length > 0) {
-            setTransactions(list);
-          }
+          setTransactions(list);
         },
         (err) => handleFirestoreError(err, OperationType.LIST, 'transactions')
       );
 
       const unsubSettings = onSnapshot(
         query(collection(db, 'notificationSettings'), where('userId', '==', uid)),
-        (snapshot) => {
+        async (snapshot) => {
           const list: NotificationSetting[] = [];
           snapshot.forEach((doc) => {
             list.push({ ...(doc.data() as Omit<NotificationSetting, 'id'>), id: doc.id });
           });
           if (list.length > 0) {
             setNotificationSettings(list);
+          } else {
+            // Unconditionally seed basic settings on cloud if subscriber starts brand new
+            setNotificationSettings(INITIAL_NOTIFICATION_SETTINGS);
+            try {
+              const batch = writeBatch(db);
+              for (const ns of INITIAL_NOTIFICATION_SETTINGS) {
+                const id = ns.id.startsWith('n-') ? 'setting_' + Math.random().toString(36).substr(2, 9) : ns.id;
+                const ref = doc(db, 'notificationSettings', id);
+                batch.set(ref, {
+                  timeBeforeHours: ns.timeBeforeHours,
+                  channel: ns.channel,
+                  template: ns.template,
+                  isActive: ns.isActive,
+                  userId: uid
+                });
+              }
+              await batch.commit();
+            } catch (error) {
+              console.error("Auto seeding cloud notification profiles failed: ", error);
+            }
           }
         },
         (err) => handleFirestoreError(err, OperationType.LIST, 'notificationSettings')
@@ -268,9 +293,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           snapshot.forEach((doc) => {
             list.push({ ...(doc.data() as Omit<Professional, 'id'>), id: doc.id });
           });
-          if (list.length > 0) {
-            setProfessionals(list);
-          }
+          setProfessionals(list);
         },
         (err) => handleFirestoreError(err, OperationType.LIST, 'professionals')
       );
@@ -307,6 +330,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = async () => {
+    // Clear local storage cache of current user data
+    localStorage.removeItem('fran_hair_clients');
+    localStorage.removeItem('fran_hair_services');
+    localStorage.removeItem('fran_hair_appointments');
+    localStorage.removeItem('fran_hair_products');
+    localStorage.removeItem('fran_hair_transactions');
+    localStorage.removeItem('fran_hair_settings');
+    localStorage.removeItem('fran_hair_professionals');
+    localStorage.removeItem('fran_hair_offline_mode');
+
+    // Reset React state
+    setClients([]);
+    setServices([]);
+    setAppointments([]);
+    setProducts([]);
+    setTransactions([]);
+    setNotificationSettings([]);
+    setProfessionals([]);
+
     if (isFirebaseConfigured && auth) {
       try {
         await signOut(auth);
@@ -324,6 +366,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const enterLocalMode = () => {
     setIsOfflineMode(true);
     localStorage.setItem('fran_hair_offline_mode', 'true');
+
+    // Build immediate visual demo presets
+    setClients(INITIAL_CLIENTS);
+    setServices(INITIAL_SERVICES);
+    setAppointments(INITIAL_APPOINTMENTS);
+    setProducts(INITIAL_PRODUCTS);
+    setTransactions(INITIAL_TRANSACTIONS);
+    setNotificationSettings(INITIAL_NOTIFICATION_SETTINGS);
+    setProfessionals(INITIAL_PROFESSIONALS);
+
+    localStorage.setItem('fran_hair_clients', JSON.stringify(INITIAL_CLIENTS));
+    localStorage.setItem('fran_hair_services', JSON.stringify(INITIAL_SERVICES));
+    localStorage.setItem('fran_hair_appointments', JSON.stringify(INITIAL_APPOINTMENTS));
+    localStorage.setItem('fran_hair_products', JSON.stringify(INITIAL_PRODUCTS));
+    localStorage.setItem('fran_hair_transactions', JSON.stringify(INITIAL_TRANSACTIONS));
+    localStorage.setItem('fran_hair_settings', JSON.stringify(INITIAL_NOTIFICATION_SETTINGS));
+    localStorage.setItem('fran_hair_professionals', JSON.stringify(INITIAL_PROFESSIONALS));
   };
 
   // Sync Offline (localStorage) data to Cloud (Firestore)
