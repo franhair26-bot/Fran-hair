@@ -53,16 +53,32 @@ export const AlertasTab: React.FC = () => {
       .replace(/{profissional}/g, app.professional);
   };
 
-  // Action copy to clipboard and mark as Notified
+  // Helper function to format WhatsApp Web url safely
+  const getWhatsAppUrl = (phone: string, text: string) => {
+    let numeric = phone.replace(/\D/g, '');
+    if (numeric.startsWith('55') && (numeric.length === 12 || numeric.length === 13)) {
+      // Already includes Brazil country code
+    } else if (numeric.length === 10 || numeric.length === 11) {
+      numeric = '55' + numeric;
+    }
+    return `https://wa.me/${numeric}?text=${encodeURIComponent(text)}`;
+  };
+
+  // Action copy to clipboard, launch WhatsApp and mark as Notified
   const handleCopyAndMarkNotified = (app: Appointment, template: string) => {
     const compiled = compileTemplate(template, app);
     
-    // Copy to clipboard
-    navigator.clipboard.writeText(compiled);
+    // Copy to clipboard as a secure background backup
+    try {
+      navigator.clipboard.writeText(compiled);
+    } catch (err) {
+      console.warn('Could not copy automatically: ', err);
+    }
+    
     setCopiedId(app.id);
     setTimeout(() => setCopiedId(null), 2500);
 
-    // Automatically set notified: true after copying to help flow speed!
+    // Automatically set notified: true after launching to help flow speed!
     const updated: Appointment = {
       ...app,
       notified: true
@@ -139,23 +155,26 @@ export const AlertasTab: React.FC = () => {
                     {/* Copy templates trigger action buttons */}
                     <div className="flex items-center gap-2 self-end md:self-center shrink-0">
                       
-                      <button
+                      <a
+                        href={getWhatsAppUrl(app.clientPhone, textToCopy)}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onClick={() => handleCopyAndMarkNotified(app, activeSetting?.template || '')}
-                        className="px-3.5 py-2 bg-brand-moss hover:bg-brand-moss-hover text-white text-xs rounded-xl flex items-center gap-2 transition-all shadow-sm hover:shadow active:scale-[0.98] cursor-pointer"
-                        title="Copiar texto compilado para a área de transferência e marcar cliente como Notificado automaticamente"
+                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-xl flex items-center gap-2 transition-all shadow-sm hover:shadow active:scale-[0.98] cursor-pointer font-medium"
+                        title="Abrir chat no WhatsApp com mensagem preenchida e marcar como Notificado automaticamente"
                       >
                         {copiedId === app.id ? (
                           <>
-                            <Check className="w-3.5 h-3.5 text-white" />
-                            <span>Copiado!</span>
+                            <Check className="w-3.5 h-3.5 text-white animate-bounce" />
+                            <span>Abrindo WhatsApp...</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="w-3.5 h-3.5 text-white" />
-                            <span>Copiar & Notificar</span>
+                            <MessageSquare className="w-3.5 h-3.5 text-white" />
+                            <span>Enviar WhatsApp</span>
                           </>
                         )}
-                      </button>
+                      </a>
 
                       <button
                         onClick={() => handleManualMarkNotified(app)}
